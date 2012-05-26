@@ -14,6 +14,7 @@ Dancer::Session::DBI - DBI-based session engine for Dancer
 
 use strict;
 use parent 'Dancer::Session::Abstract';
+use feature 'switch';
 
 use Dancer::Config 'setting';
 use Dancer::Logger;
@@ -76,16 +77,24 @@ sub flush {
 
     my $quoted_table = $self->_dbh->quote_identifier( $settings->{table} );
 
-    # Note MySQL compatible syntax only for now, it's better than race conditions.
-    # There is no One True Way™ to do an UPSERT that works with 
-    # MySQL & Postgres & SQLite. Perhaps a future version will
-    # have some logic to determine what is the correct syntax for your DB
-    my $sth = $self->_dbh->prepare_cached(qq{
-        INSERT INTO $quoted_table (id, session_data)
-        VALUES (?, ?)
-        ON DUPLICATE KEY
-        UPDATE session_data = ?
-    });
+    # There is no simple cross-database way to do an "upsert"
+    # without race-conditions.  So we have to check what database driver
+    # we are using, and issue the appropriate syntax
+    my $sth;
+    given(lc $self->_dbh->{Driver}{Name}) {
+     	when ('mysql') { 
+            $sth = $self->_dbh->prepare_cached(qq{
+                INSERT INTO $quoted_table (id, session_data)
+                VALUES (?, ?)
+                ON DUPLICATE KEY
+                UPDATE session_data = ?
+            });
+        }
+        
+     	default {
+            die "MySQL is the only currently supported database";
+        }
+    }
 
     $sth->execute($self->id, $self->_serialize, $self->_serialize);
 
