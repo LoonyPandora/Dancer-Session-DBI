@@ -25,9 +25,6 @@ use Try::Tiny;
 our $VERSION = '0.1.0';
 
 
-my $settings = setting('session_options');
-
-
 sub create {
     my $self = shift->new;
 
@@ -38,6 +35,7 @@ sub create {
 
 sub retrieve {
     my ($self, $session_id) = @_;
+    my $settings = setting('session_options');
 
     my $quoted_table = $self->_dbh->quote_identifier( $settings->{table} );
 
@@ -62,6 +60,7 @@ sub retrieve {
 
 sub destroy {
     my ($self, $session_id) = @_;
+    my $settings = setting('session_options');
 
     my $quoted_table = $self->_dbh->quote_identifier( $settings->{table} );
 
@@ -74,21 +73,23 @@ sub destroy {
 
 sub flush {
     my $self = shift;
+    my $settings = setting('session_options');
 
     my $quoted_table = $self->_dbh->quote_identifier( $settings->{table} );
 
     # There is no simple cross-database way to do an "upsert"
     # without race-conditions.  So we have to check what database driver
     # we are using, and issue the appropriate syntax
-    my $sth;
     given(lc $self->_dbh->{Driver}{Name}) {
      	when ('mysql') { 
-            $sth = $self->_dbh->prepare_cached(qq{
+            my $sth = $self->_dbh->prepare_cached(qq{
                 INSERT INTO $quoted_table (id, session_data)
                 VALUES (?, ?)
                 ON DUPLICATE KEY
                 UPDATE session_data = ?
             });
+
+            $sth->execute($self->id, $self->_serialize, $self->_serialize);
         }
         
      	default {
@@ -96,7 +97,6 @@ sub flush {
         }
     }
 
-    $sth->execute($self->id, $self->_serialize, $self->_serialize);
 
     return $self;
 }
@@ -105,6 +105,7 @@ sub flush {
 # Returns a dbh handle, either cached or brand new
 sub _dbh {
     my $self = shift;
+    my $settings = setting('session_options');
 
     if (defined $settings->{dbh}) {
         return $settings->{dbh};
