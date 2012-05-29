@@ -4,11 +4,59 @@ package Dancer::Session::DBI;
 
 =head1 NAME
 
-Dancer::Session::DBI - DBI-based session engine for Dancer
+Dancer::Session::DBI - DBI based session engine for Dancer
 
 =head1 SYNOPSIS
 
+This module implements a session engine by serializing the session
+into L<JSON>, and storing it in a database via L<DBI>
+
+B<NOTE: This module is currently only compatible with MySQL. This will change in the future>
+
+JSON was chosen as the serialization format, because it 
+is fast, terse, and portable.
+
+In future versions the serialization method may be customizable, but for now JSON
+is the only choice. You should look into L<Plack::Session::Store::DBI> if you
+have an immediate need to use a different serializer, and are in a position to
+use L<Plack>
+
 =head1 USAGE
+
+In config.yml
+
+  session: "DBI"
+  session_options: 
+      dsn:      "DBI:mysql:database=testing;host=127.0.0.1;port=3306" # DBI Data Source Name
+      table:    "sessions"  # Name of the table to store sessions
+      user:     "user"      # Username used to connect to the database
+      password: "password"  # Password to connect to the database
+
+
+Alternatively, you can pass an active DBH connection in your application
+
+    set 'session_options' => {
+        dbh   => DBI->connect( 'DBI:mysql:database=testing;host=127.0.0.1;port=3306', 'user', 'password' ),
+        table => 'session',
+    };
+
+The following MySQL schema is the minimum requirement.
+
+    CREATE TABLE `sessions` (
+        `id`           CHAR(40) PRIMARY KEY,
+        `session_data` TEXT
+    );
+
+If using a MySQL C<Memory> table, you must use a C<VARCHAR> type for the C<session_data> field, as that
+table type doesn't support C<TEXT>
+
+A timestamp field that updates when a session is updated is recommended, so you can expire sessions
+server-side as well as client-side. Something like this
+
+    `last_active` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+This session engine will not automagically remove expired sessions on the server, but with a timestamp
+field as above, you should be able to to do this.
 
 =cut
 
@@ -25,6 +73,14 @@ use Try::Tiny;
 our $VERSION = '0.1.0';
 
 
+=head1 METHODS
+
+=head2 create()
+
+Creates a new session. Returns the session object.
+
+=cut
+
 sub create {
     my $self = shift->new;
 
@@ -33,11 +89,55 @@ sub create {
     return $self;
 }
 
+
+=head2 flush()
+
+Write the session to the database. Returns the session object.
+
+=cut
+
+sub flush {
+    my $self = shift;
+
+    my $quoted_table = $self->_quote_table;
+
+    # There is no simple cross-database way to do an "upsert"
+    # without race-conditions. So we will have to check what database driver
+    # we are using, and issue the appropriate syntax. Eventually. TODO
+    given(lc $self->_dbh->{Driver}{Name}) {
+     	when ('mysql') { 
+            my $sth = $self->_dbh->prepare_cached(qq{
+                INSERT INTO $quoted_table (id, session_data)
+                VALUES (?, ?)
+                ON DUPLICATE KEY
+                UPDATE session_data = ?
+            });
+
+            $sth->execute($self->id, $self->_serialize, $self->_serialize);
+        }
+
+     	default {
+            die "MySQL is the only currently supported database";
+        }
+    }
+
+    return $self;
+}
+
+
+=head2 retrieve($id)
+
+Look for a session with the given id.
+
+Returns the session object if found, C<undef> if not. Logs a warning if the
+session was found, but could not be deserialized.
+
+=cut
+
 sub retrieve {
     my ($self, $session_id) = @_;
-    my $settings = setting('session_options');
 
-    my $quoted_table = $self->_dbh->quote_identifier( $settings->{table} );
+    my $quoted_table = $self->_quote_table;
 
     my $sth = $self->_dbh->prepare_cached(qq{
         SELECT session_data
@@ -58,55 +158,58 @@ sub retrieve {
     return bless $session, __PACKAGE__ if $session;
 }
 
-sub destroy {
-    my ($self, $session_id) = @_;
-    my $settings = setting('session_options');
 
-    my $quoted_table = $self->_dbh->quote_identifier( $settings->{table} );
+=head2 destroy()
+
+Remove the current session object from the database..
+
+=cut
+
+sub destroy {
+    my $self = shift;
+
+    my $quoted_table = $self->_quote_table;
 
     my $sth = $self->_dbh->prepare_cached(qq{
         DELETE FROM $quoted_table
         WHERE id = ?
     });
-    $sth->execute( $session_id );
+
+    $sth->execute($self->id);
 }
 
-sub flush {
+
+
+# Mostly error checking
+sub init {
     my $self = shift;
+
+    $self->SUPER::init(@_);
     my $settings = setting('session_options');
 
-    my $quoted_table = $self->_dbh->quote_identifier( $settings->{table} );
+    my $valid_dsn = DBI->parse_dsn($settings->{dsn} || '');
 
-    # There is no simple cross-database way to do an "upsert"
-    # without race-conditions.  So we have to check what database driver
-    # we are using, and issue the appropriate syntax
-    given(lc $self->_dbh->{Driver}{Name}) {
-     	when ('mysql') { 
-            my $sth = $self->_dbh->prepare_cached(qq{
-                INSERT INTO $quoted_table (id, session_data)
-                VALUES (?, ?)
-                ON DUPLICATE KEY
-                UPDATE session_data = ?
-            });
-
-            $sth->execute($self->id, $self->_serialize, $self->_serialize);
-        }
-        
-     	default {
-            die "MySQL is the only currently supported database";
-        }
+    if (!$settings->{dbh} && !$valid_dsn) {
+        die "No database handle and no valid DSN specified";
     }
 
+    if ($valid_dsn && !($settings->{user} && $settings->{password})) {
+        die "Valid DSN specified, but no user or password specified";
+    }
 
-    return $self;
+    if (!$settings->{table}) {
+        die "No table selected for session storage";
+    }
 }
 
 
-# Returns a dbh handle, either cached or brand new
+# Returns a dbh handle, either created from the DSN
+# or using the one passed as a DBH argument.
 sub _dbh {
     my $self = shift;
     my $settings = setting('session_options');
 
+    # We prever an active DBH over a DSN.
     if (defined $settings->{dbh}) {
         return $settings->{dbh};
     }
@@ -114,14 +217,24 @@ sub _dbh {
     return DBI->connect($settings->{dsn}, $settings->{user}, $settings->{password});
 }
 
-# Serializes to JSON
+
+# Quotes table names to prevent SQLi, also checks whether a table name was passed at all
+sub _quote_table {
+    my $self = shift;
+    my $settings = setting('session_options');
+
+    return $self->_dbh->quote_identifier( $settings->{table} );
+}
+
+
+# Serialize and Deserialize methods.
 sub _serialize {
     my $self = shift;
 
     return encode_json( {%$self} );
 }
 
-# Deserializes from JSON
+
 sub _deserialize {
     my ($self, $json) = @_;
 
@@ -130,10 +243,9 @@ sub _deserialize {
 
 
 
-
 =head1 SEE ALSO
 
-L<Dancer>, L<Dancer::Session>
+L<Dancer>, L<Dancer::Session>, L<Plack::Session::Store::DBI>
 
 
 =head1 AUTHOR
