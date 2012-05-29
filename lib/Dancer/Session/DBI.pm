@@ -114,6 +114,7 @@ sub flush {
             });
 
             $sth->execute($self->id, $self->_serialize, $self->_serialize);
+            $sth->finish();
         }
 
      	default {
@@ -147,6 +148,7 @@ sub retrieve {
 
     $sth->execute( $session_id );
     my ($session) = $sth->fetchrow_array();
+    $sth->finish();
 
     $session = try {
         $self->_deserialize($session);
@@ -176,31 +178,9 @@ sub destroy {
     });
 
     $sth->execute($self->id);
+    $sth->finish();
 }
 
-
-
-# Mostly error checking
-sub init {
-    my $self = shift;
-
-    $self->SUPER::init(@_);
-    my $settings = setting('session_options');
-
-    my $valid_dsn = DBI->parse_dsn($settings->{dsn} || '');
-
-    if (!$settings->{dbh} && !$valid_dsn) {
-        die "No database handle and no valid DSN specified";
-    }
-
-    if ($valid_dsn && !($settings->{user} && $settings->{password})) {
-        die "Valid DSN specified, but no user or password specified";
-    }
-
-    if (!$settings->{table}) {
-        die "No table selected for session storage";
-    }
-}
 
 
 # Returns a dbh handle, either created from the DSN
@@ -209,11 +189,22 @@ sub _dbh {
     my $self = shift;
     my $settings = setting('session_options');
 
-    # We prever an active DBH over a DSN.
-    if (defined $settings->{dbh}) {
-        return $settings->{dbh};
+    # No table specified means we have to die It's essential.
+    die "No table selected for session storage" if !$settings->{table};
+
+    # Prefer an active DBH over a DSN.
+    return $settings->{dbh} if defined $settings->{dbh};
+
+    # Check the validity of the DSN if we don't have a handle
+    my $valid_dsn = DBI->parse_dsn($settings->{dsn} || '');
+
+    die "No valid DSN specified" if !$valid_dsn;
+
+    if (!$settings->{user} || !$settings->{password}) {
+        die "No user or password specified";
     }
 
+    # If all the details check out, return a fresh connection
     return DBI->connect($settings->{dsn}, $settings->{user}, $settings->{password});
 }
 
