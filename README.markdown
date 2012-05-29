@@ -5,7 +5,7 @@ Dancer::Session::DBI - DBI based session engine for Dancer
 # SYNOPSIS
 
 This module implements a session engine by serializing the session
-into [JSON](http://search.cpan.org/perldoc?JSON), and storing it in a database via [DBI](http://search.cpan.org/perldoc?DBI)
+into [JSON](https://metacpan.org/module/JSON), and storing it in a database via [DBI](https://metacpan.org/module/DBI)
 
 __NOTE: This module is currently only compatible with MySQL. This will change in the future__
 
@@ -13,9 +13,9 @@ JSON was chosen as the serialization format, because it
 is fast, terse, and portable.
 
 In future versions the serialization method may be customizable, but for now JSON
-is the only choice. You should look into [Plack::Session::Store::DBI](http://search.cpan.org/perldoc?Plack::Session::Store::DBI) if you
+is the only choice. You should look into [Plack::Session::Store::DBI](https://metacpan.org/module/Plack::Session::Store::DBI) if you
 have an immediate need to use a different serializer, and are in a position to
-use [Plack](http://search.cpan.org/perldoc?Plack)
+use [Plack](https://metacpan.org/module/Plack)
 
 # USAGE
 
@@ -78,7 +78,7 @@ Remove the current session object from the database..
 
 # SEE ALSO
 
-[Dancer](http://search.cpan.org/perldoc?Dancer), [Dancer::Session](http://search.cpan.org/perldoc?Dancer::Session), [Plack::Session::Store::DBI](http://search.cpan.org/perldoc?Plack::Session::Store::DBI)
+[Dancer](https://metacpan.org/module/Dancer), [Dancer::Session](https://metacpan.org/module/Dancer::Session), [Plack::Session::Store::DBI](https://metacpan.org/module/Plack::Session::Store::DBI)
 
 
 
