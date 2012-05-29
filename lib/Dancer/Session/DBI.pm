@@ -62,7 +62,7 @@ field as above, you should be able to to do this.
 
 use strict;
 use parent 'Dancer::Session::Abstract';
-use feature 'switch';
+use feature qw(switch);
 
 use Dancer::Config 'setting';
 use Dancer::Logger;
@@ -138,20 +138,20 @@ session was found, but could not be deserialized.
 sub retrieve {
     my ($self, $session_id) = @_;
 
-    my $quoted_table = $self->_quote_table;
+    my $session = try {
+        my $quoted_table = $self->_quote_table;
 
-    my $sth = $self->_dbh->prepare_cached(qq{
-        SELECT session_data
-        FROM $quoted_table
-        WHERE id = ?
-    });
+        my $sth = $self->_dbh->prepare_cached(qq{
+            SELECT session_data
+            FROM $quoted_table
+            WHERE id = ?
+        });
 
-    $sth->execute( $session_id );
-    my ($session) = $sth->fetchrow_array();
-    $sth->finish();
+        $sth->execute( $session_id );
+        my ($session) = $sth->fetchrow_array();
+        $sth->finish();
 
-    $session = try {
-        $self->_deserialize($session);
+        $self->_deserialize($session);        
     } catch {
         Dancer::Logger::warning("Could not retrieve session ID $session_id - $_");
         return;
