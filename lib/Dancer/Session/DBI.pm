@@ -8,18 +8,14 @@ Dancer::Session::DBI - DBI based session engine for Dancer
 
 =head1 SYNOPSIS
 
-This module implements a session engine by serializing the session
-into L<JSON>, and storing it in a database via L<DBI>
+This module implements a session engine by serializing the session, 
+and storing it in a database via L<DBI>. The default serialization method is L<JSON>,
+though one can use any serialization format you desire. L<YAML> and L<Storable> are
+viable alternatives.
+
+JSON was chosen as the default serialization format, as it is fast, terse, and portable.
 
 B<NOTE: This module is currently only compatible with MySQL. This will change in the future>
-
-JSON was chosen as the serialization format, because it 
-is fast, terse, and portable.
-
-In future versions the serialization method may be customizable, but for now JSON
-is the only choice. You should look into L<Plack::Session::Store::DBI> if you
-have an immediate need to use a different serializer, and are in a position to
-use L<Plack>
 
 =head1 USAGE
 
@@ -32,26 +28,29 @@ In config.yml
       user:     "user"      # Username used to connect to the database
       password: "password"  # Password to connect to the database
 
-
-Alternatively, you can pass an active DBH connection in your application
+Alternatively, you can set the database handle in your application, by passing
+an anonymous sub that returns an active DBH connection. Specifying a custom
+serializer / deserializer is also possible
 
     set 'session_options' => {
-        dbh   => DBI->connect( 'DBI:mysql:database=testing;host=127.0.0.1;port=3306', 'user', 'password' ),
-        table => 'session',
+        dbh          => sub { DBI->connect( 'DBI:mysql:database=testing;host=127.0.0.1;port=3306', 'user', 'password' ); },
+        serializer   => sub { YAML::Dump(@_); },
+        deserializer => sub { YAML::Load(@_); }, # Must return a hashref so it can be blessed;
+        table        => 'session',
     };
 
-The following MySQL schema is the minimum requirement.
+The following schema is the minimum requirement.
 
     CREATE TABLE `sessions` (
         `id`           CHAR(40) PRIMARY KEY,
         `session_data` TEXT
     );
 
-If using a MySQL C<Memory> table, you must use a C<VARCHAR> type for the C<session_data> field, as that
+If using a C<Memory> table, you must use a C<VARCHAR> type for the C<session_data> field, as that
 table type doesn't support C<TEXT>
 
 A timestamp field that updates when a session is updated is recommended, so you can expire sessions
-server-side as well as client-side. Something like this
+server-side as well as client-side.
 
     `last_active` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
@@ -64,13 +63,11 @@ use strict;
 use parent 'Dancer::Session::Abstract';
 use feature qw(switch);
 
-use Dancer::Config 'setting';
-use Dancer::Logger;
+use Dancer qw(:syntax);
 use DBI;
-use JSON::XS qw(encode_json decode_json);
 use Try::Tiny;
 
-our $VERSION = '0.1.0';
+our $VERSION = '1.0.0';
 
 
 =head1 METHODS
@@ -153,7 +150,7 @@ sub retrieve {
 
         $self->_deserialize($session);        
     } catch {
-        Dancer::Logger::warning("Could not retrieve session ID $session_id - $_");
+        warning("Could not retrieve session ID $session_id - $_");
         return;
     };
 
@@ -189,18 +186,15 @@ sub _dbh {
     my $self = shift;
     my $settings = setting('session_options');
 
-    # No table specified means we have to die It's essential.
-    die "No table selected for session storage" if !$settings->{table};
-
     # Prefer an active DBH over a DSN.
-    return $settings->{dbh} if defined $settings->{dbh};
+    return $settings->{dbh}->() if defined $settings->{dbh};
 
     # Check the validity of the DSN if we don't have a handle
     my $valid_dsn = DBI->parse_dsn($settings->{dsn} || '');
 
     die "No valid DSN specified" if !$valid_dsn;
 
-    if (!$settings->{user} || !$settings->{password}) {
+    if (!defined $settings->{user} || !defined $settings->{password}) {
         die "No user or password specified";
     }
 
@@ -209,10 +203,12 @@ sub _dbh {
 }
 
 
-# Quotes table names to prevent SQLi, also checks whether a table name was passed at all
+# Quotes table names to prevent SQLi, and check that we have a table name specified
 sub _quote_table {
     my $self = shift;
     my $settings = setting('session_options');
+
+    die "No table selected for session storage" if !$settings->{table};
 
     return $self->_dbh->quote_identifier( $settings->{table} );
 }
@@ -221,15 +217,26 @@ sub _quote_table {
 # Serialize and Deserialize methods.
 sub _serialize {
     my $self = shift;
+    my $settings = setting('session_options');
 
-    return encode_json( {%$self} );
+    if (defined $settings->{serializer}) {
+        return $settings->{serializer}->({%$self});
+    }
+
+    # A session is by definition ephemeral - Store it compactly
+    return to_json({%$self}, { pretty => 0 });
 }
 
 
 sub _deserialize {
     my ($self, $json) = @_;
+    my $settings = setting('session_options');
 
-    return decode_json( $json );
+    if (defined $settings->{deserializer}) {
+        return $settings->{deserializer}->($json);
+    }
+
+    return from_json($json);
 }
 
 
