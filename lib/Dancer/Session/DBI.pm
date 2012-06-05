@@ -1,6 +1,6 @@
 package Dancer::Session::DBI;
 
-# ABSTRACT: DBI-based session engine for Dancer
+# ABSTRACT: DBI based session engine for Dancer
 
 =head1 NAME
 
@@ -10,7 +10,7 @@ Dancer::Session::DBI - DBI based session engine for Dancer
 
 This module implements a session engine by serializing the session, 
 and storing it in a database via L<DBI>. The default serialization method is L<JSON>,
-though one can use any serialization format you desire. L<YAML> and L<Storable> are
+though one can specify any serialization format you want. L<YAML> and L<Storable> are
 viable alternatives.
 
 JSON was chosen as the default serialization format, as it is fast, terse, and portable.
@@ -35,7 +35,7 @@ serializer / deserializer is also possible
     set 'session_options' => {
         dbh          => sub { DBI->connect( 'DBI:mysql:database=testing;host=127.0.0.1;port=3306', 'user', 'password' ); },
         serializer   => sub { YAML::Dump(@_); },
-        deserializer => sub { YAML::Load(@_); }, # Must return a hashref so it can be blessed;
+        deserializer => sub { YAML::Load(@_); },
         table        => 'session',
     };
 
@@ -125,7 +125,7 @@ sub flush {
         }
 
      	default {
-            die "MySQL is the only currently supported database";
+            die "MySQL and SQLite are the only currently supported databases";
         }
     }
 
@@ -213,7 +213,8 @@ sub _dbh {
 }
 
 
-# Quotes table names to prevent SQLi, and check that we have a table name specified
+# Quotes table names to prevent SQLi,
+# and check that we have a table name specified
 sub _quote_table {
     my $self = shift;
     my $settings = setting('session_options');
@@ -224,7 +225,7 @@ sub _quote_table {
 }
 
 
-# Serialize and Deserialize methods.
+# Default Serialize method
 sub _serialize {
     my $self = shift;
     my $settings = setting('session_options');
@@ -238,6 +239,7 @@ sub _serialize {
 }
 
 
+# Default Deserialize method
 sub _deserialize {
     my ($self, $json) = @_;
     my $settings = setting('session_options');
