@@ -15,7 +15,7 @@ viable alternatives.
 
 JSON was chosen as the default serialization format, as it is fast, terse, and portable.
 
-B<NOTE: This module is currently only compatible with MySQL. This will change in the future>
+B<NOTE: This module is currently only compatible with MySQL and SQLite. This will change in the future>
 
 =head1 USAGE
 
@@ -112,6 +112,16 @@ sub flush {
 
             $sth->execute($self->id, $self->_serialize, $self->_serialize);
             $sth->finish();
+        }
+
+        when ('sqlite') {
+            my $sth = $self->_dbh->prepare_cached(qq{
+                INSERT OR REPLACE INTO $quoted_table (id, session_data) 
+                VALUES (?, coalesce( (SELECT session_data FROM $quoted_table WHERE id = ?), ?) )
+            });
+
+            $sth->execute($self->id, $self->id, $self->_serialize);
+            $sth->finish();        
         }
 
      	default {
