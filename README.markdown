@@ -32,7 +32,7 @@ serializer / deserializer is also possible
         dbh          => sub { DBI->connect( 'DBI:mysql:database=testing;host=127.0.0.1;port=3306', 'user', 'password' ); },
         serializer   => sub { YAML::Dump(@_); },
         deserializer => sub { YAML::Load(@_); },
-        table        => 'session',
+        table        => 'sessions',
     };
 
 The following schema is the minimum requirement.
