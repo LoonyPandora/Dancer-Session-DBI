@@ -4,18 +4,14 @@ Dancer::Session::DBI - DBI based session engine for Dancer
 
 # SYNOPSIS
 
-This module implements a session engine by serializing the session
-into [JSON](https://metacpan.org/module/JSON), and storing it in a database via [DBI](https://metacpan.org/module/DBI)
+This module implements a session engine by serializing the session, 
+and storing it in a database via [DBI](https://metacpan.org/module/DBI). The default serialization method is [JSON](https://metacpan.org/module/JSON),
+though one can specify any serialization format you want. [YAML](https://metacpan.org/module/YAML) and [Storable](https://metacpan.org/module/Storable) are
+viable alternatives.
 
-__NOTE: This module is currently only compatible with MySQL. This will change in the future__
+JSON was chosen as the default serialization format, as it is fast, terse, and portable.
 
-JSON was chosen as the serialization format, because it 
-is fast, terse, and portable.
-
-In future versions the serialization method may be customizable, but for now JSON
-is the only choice. You should look into [Plack::Session::Store::DBI](https://metacpan.org/module/Plack::Session::Store::DBI) if you
-have an immediate need to use a different serializer, and are in a position to
-use [Plack](https://metacpan.org/module/Plack)
+__NOTE: This module is currently only compatible with MySQL and SQLite. This will change in the future__
 
 # USAGE
 
@@ -28,27 +24,29 @@ In config.yml
         user:     "user"      # Username used to connect to the database
         password: "password"  # Password to connect to the database
 
-
-
-Alternatively, you can pass an active DBH connection in your application
+Alternatively, you can set the database handle in your application, by passing
+an anonymous sub that returns an active DBH connection. Specifying a custom
+serializer / deserializer is also possible
 
     set 'session_options' => {
-        dbh   => DBI->connect( 'DBI:mysql:database=testing;host=127.0.0.1;port=3306', 'user', 'password' ),
-        table => 'session',
+        dbh          => sub { DBI->connect( 'DBI:mysql:database=testing;host=127.0.0.1;port=3306', 'user', 'password' ); },
+        serializer   => sub { YAML::Dump(@_); },
+        deserializer => sub { YAML::Load(@_); },
+        table        => 'session',
     };
 
-The following MySQL schema is the minimum requirement.
+The following schema is the minimum requirement.
 
     CREATE TABLE `sessions` (
         `id`           CHAR(40) PRIMARY KEY,
         `session_data` TEXT
     );
 
-If using a MySQL `Memory` table, you must use a `VARCHAR` type for the `session_data` field, as that
+If using a `Memory` table, you must use a `VARCHAR` type for the `session_data` field, as that
 table type doesn't support `TEXT`
 
 A timestamp field that updates when a session is updated is recommended, so you can expire sessions
-server-side as well as client-side. Something like this
+server-side as well as client-side.
 
     `last_active` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
