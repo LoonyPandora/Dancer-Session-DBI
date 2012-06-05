@@ -1,3 +1,24 @@
+1.0.0   2012-06-05
+
+    [ DOCUMENTATION ]
+    * Clarified documentation regarding UTF8 / MySQL tables
+    * Additional documentation about serialization methods
+
+    [ BUGFIX ]
+    * Require an anonymous sub to pass a DBH handle, to be sure it isn't stale.
+      This is a backwards incompatible change.
+      
+    * Allow blank usernames / passwords, as they can possibly be valid
+    * Fix utf8 encoding by using dancer's JSON serializer.
+
+    [ FEATURE ]
+    * Ability to specify serializer / deserialzer via anonymous sub
+    * Add SQLite support for storage
+
+    [ TESTS ]
+    * Added additional tests for error handling
+
+
 0.1.0   2012-05-29
 
     ** First Public Release **
