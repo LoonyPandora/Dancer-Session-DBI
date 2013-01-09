@@ -11,7 +11,6 @@ env:
 services:
     - MySQL
     - PostgreSQL
-    - SQLite3
 
 before_install:
     - cpanm Dist::Zilla DBD::mysql DBD::Pg DBD::SQLite --quiet --notest
@@ -21,8 +20,10 @@ install:
     - dzil listdeps | xargs cpanm --quiet --notest
 
 before_script:
-  - mysql -e 'create database myapp_test;'
-  - psql -c 'create database myapp_test;' -U postgres
+  - psql -c 'CREATE DATABASE myapp_test WITH ENCODING UTF8'
+  - mysql -e 'CREATE DATABASE myapp_test; USE myapp_test; CREATE TABLE sessions (id char(72), session_data varchar(2048), PRIMARY KEY (id)) CHARSET=utf8;'
+  - psql -d 'myapp_test' -c 'CREATE TABLE sessions (id char(72), session_data varchar(2048), PRIMARY KEY (id))'
+
 
 script:
     - dzil smoke --release
