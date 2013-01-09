@@ -7,12 +7,10 @@ use utf8;
 use Dancer::Session::DBI;
 use Dancer qw(:syntax :tests);
 use DBI;
-use Data::Dump qw(dump);
 
-unless ( !$ENV{TRAVIS_TESTING} ) {
+unless ( $ENV{TRAVIS_TESTING} ) {
     plan( skip_all => "Travis CI specific tests not required for installation" );
 }
-
 
 set session => 'DBI';
 
@@ -31,7 +29,6 @@ for my $config (
 
     ok(session(testing => "123"), "Can set something in the session");
     is(session('testing'), '123', "Can retrieve something from the session"); 
-
     ok(session(utf8 => "☃"), "Can set UTF8");
     is(session('utf8'), '☃', "Can get UTF8 back");    
 }
