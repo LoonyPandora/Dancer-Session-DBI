@@ -79,11 +79,7 @@ Creates a new session. Returns the session object.
 =cut
 
 sub create {
-    my $self = shift->new;
-
-    $self->flush;
-
-    return $self;
+    return Dancer::Session::DBI->new->flush;
 }
 
 
