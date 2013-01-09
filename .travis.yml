@@ -6,7 +6,7 @@ perl:
     - "5.12"
 
 env:
-    - TRAVIS_TESTING = true
+    - TRAVIS_TESTING=true
 
 services:
     - MySQL
@@ -25,4 +25,4 @@ before_script:
   - psql -c 'create database myapp_test;' -U postgres
 
 script:
-    - dzil smoke --author --release
+    - dzil smoke --release
