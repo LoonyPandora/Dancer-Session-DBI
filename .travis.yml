@@ -19,10 +19,10 @@ install:
     - dzil authordeps | xargs cpanm --quiet --notest
     - dzil listdeps | xargs cpanm --quiet --notest
 
-before_script:
-    - psql -c 'CREATE DATABASE myapp_test'
+before_script:    
+    - psql -c 'CREATE DATABASE myapp_test;'
     - mysql -e 'CREATE DATABASE myapp_test; USE myapp_test; CREATE TABLE sessions (id char(72), session_data varchar(2048), PRIMARY KEY (id)) CHARSET=utf8;'
-    - psql -d 'myapp_test' -c 'CREATE TABLE sessions (id char(72), session_data varchar(2048), PRIMARY KEY (id))'
+    - psql -d 'myapp_test' -c 'CREATE TABLE sessions (id char(72), session_data varchar(2048), PRIMARY KEY (id));'
 
 
 script:
