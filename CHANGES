@@ -1,3 +1,13 @@
+1.1.0   2013-01-10
+
+    [ FEATURE ]
+    * Added PostgreSQL support for version 9.1 and greater
+    * Added a minimum version check to MySQL case.
+
+    [ TESTS ]
+    * Module is now tested by TravisCI
+
+
 1.0.0   2012-06-05
 
     [ DOCUMENTATION ]
