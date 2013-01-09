@@ -23,7 +23,7 @@ eval {
     set session => 'DBI';
     set 'session_options' => {
         table => 'table',
-        dsn    => 'Invalid',
+        dsn   => 'Invalid',
     };
     session->create();
 };
