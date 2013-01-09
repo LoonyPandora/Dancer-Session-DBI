@@ -14,10 +14,9 @@ services:
     - SQLite3
 
 before_install:
-    - cpanm Dist::Zilla --quiet --notest
+    - cpanm Dist::Zilla DBD::mysql DBD::Pg DBD::SQLite --quiet --notest
 
 install:
-    - cpanm Dist::Zilla --quiet --notest
     - dzil authordeps | xargs cpanm --quiet --notest
     - dzil listdeps | xargs cpanm --quiet --notest
 
