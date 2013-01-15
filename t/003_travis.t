@@ -20,11 +20,17 @@ for my $config (
     {dsn => "DBI:SQLite:dbname=:memory:", user => "" }
 ) {
 
+    my $dbh = DBI->connect($config->{dsn}, $config->{user}, "");
+
+    # There is no way to reference an in-memory database created elsewhere
+    # So the SQLite setup goes here.
+    if (!$config->{user}) {
+        $dbh->do("CREATE TABLE session (id char(72), session_data varchar(2048), PRIMARY KEY (id))");
+    }
+
     set 'session_options' => {
-        table    => 'session',
-        dsn      => $config->{dsn},
-        user     => $config->{user},
-        password => "",
+        table => 'session',
+        dbh   => sub { $dbh },
     };
 
     ok(session(testing => "123"), "Can set something in the session");
