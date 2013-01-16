@@ -17,7 +17,7 @@ set session => 'DBI';
 for my $config (
     {dsn => "DBI:mysql:database=myapp_test;host=127.0.0.1", user => "root"},
     {dsn => "DBI:Pg:dbname=myapp_test;host=127.0.0.1", user => "postgres"},
-    # {dsn => "DBI:SQLite:dbname=:memory:", user => "" }
+    {dsn => "DBI:SQLite:dbname=:memory:", user => "" }
 ) {
 
     my $dbh = DBI->connect($config->{dsn}, $config->{user}, "");
@@ -39,4 +39,4 @@ for my $config (
     is(session('utf8'), '☃', "Can get UTF8 back" . $config->{user});    
 }
 
-done_testing(8);
+done_testing(12);
