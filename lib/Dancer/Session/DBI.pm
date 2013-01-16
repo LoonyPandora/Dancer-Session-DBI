@@ -103,7 +103,7 @@ sub flush {
             if ($self->_dbh->{mysql_serverversion} < 40101) {
                 die "A minimum of MySQL 4.1.1 is required";
             }
-            
+
             my $sth = $self->_dbh->prepare_cached(qq{
                 INSERT INTO $quoted_table (id, session_data)
                 VALUES (?, ?)
@@ -119,10 +119,10 @@ sub flush {
             # All stable versions of DBD::SQLite use an SQLite version that support upserts
             my $sth = $self->_dbh->prepare_cached(qq{
                 INSERT OR REPLACE INTO $quoted_table (id, session_data) 
-                VALUES (?, coalesce( (SELECT session_data FROM $quoted_table WHERE id = ?), ?) )
+                VALUES (?, ?)
             });
 
-            $sth->execute($self->id, $self->id, $self->_serialize);
+            $sth->execute($self->id, $self->_serialize);
             $sth->finish();        
         }
 
