@@ -17,7 +17,7 @@ set session => 'DBI';
 for my $config (
     {dsn => "DBI:mysql:database=myapp_test;host=127.0.0.1", user => "root"},
     {dsn => "DBI:Pg:dbname=myapp_test;host=127.0.0.1", user => "postgres"},
-    {dsn => "DBI:SQLite:dbname=:memory:", user => "" }
+    # {dsn => "DBI:SQLite:dbname=:memory:", user => "" }
 ) {
 
     my $dbh = DBI->connect($config->{dsn}, $config->{user}, "");
@@ -33,10 +33,10 @@ for my $config (
         dbh   => sub { $dbh },
     };
 
-    ok(session(testing => "123"), "Can set something in the session");
-    is(session('testing'), '123', "Can retrieve something from the session"); 
-    ok(session(utf8 => "☃"), "Can set UTF8");
-    is(session('utf8'), '☃', "Can get UTF8 back");    
+    ok(session(testing => "123"), "Can something in the session " . $config->{user});
+    is(session('testing'), '123', "Can retrieve something from the session " . $config->{user}); 
+    ok(session(utf8 => "☃"), "Can set UTF8 " . $config->{user});
+    is(session('utf8'), '☃', "Can get UTF8 back" . $config->{user});    
 }
 
-done_testing(12);
+done_testing(8);
