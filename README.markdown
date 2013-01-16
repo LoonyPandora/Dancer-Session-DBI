@@ -11,7 +11,7 @@ viable alternatives.
 
 JSON was chosen as the default serialization format, as it is fast, terse, and portable.
 
-__NOTE: This module is currently only compatible with MySQL and SQLite. This will change in the future__
+Supported databases are MySQL > 4.1.1, PostgreSQL > 9.1, and SQLite > 3.0
 
 # USAGE
 
@@ -46,12 +46,13 @@ If using a `Memory` table, you must use a `VARCHAR` type for the `session_data` 
 table type doesn't support `TEXT`
 
 A timestamp field that updates when a session is updated is recommended, so you can expire sessions
-server-side as well as client-side.
+server-side as well as client-side. You can do this in MySQL with the following SQL. Other database
+engines are left as an exercise for the reader.
 
     `last_active` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
 This session engine will not automagically remove expired sessions on the server, but with a timestamp
-field as above, you should be able to to do this.
+field as above, you should be able to to do this manually.
 
 # METHODS
 
@@ -88,7 +89,7 @@ James Aitken <jaitken@cpan.org>
 
 # COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by James Aitken.
+This software is copyright (c) James Aitken.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
