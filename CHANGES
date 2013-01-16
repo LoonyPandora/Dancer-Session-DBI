@@ -1,11 +1,15 @@
-1.1.0   2013-01-10
+1.1.0   2013-01-16
 
     [ FEATURE ]
     * Added PostgreSQL support for version 9.1 and greater
+        (With thanks to René Hertel)
     * Added a minimum version check to MySQL case.
 
     [ TESTS ]
     * Module is now tested by TravisCI
+
+    [ BUGFIX ]
+    * SQLite sessions would only store one item at a time
 
 
 1.0.0   2012-06-05
@@ -16,8 +20,7 @@
 
     [ BUGFIX ]
     * Require an anonymous sub to pass a DBH handle, to be sure it isn't stale.
-      This is a backwards incompatible change.
-      
+        This is a backwards incompatible change.
     * Allow blank usernames / passwords, as they can possibly be valid
     * Fix utf8 encoding by using dancer's JSON serializer.
 
