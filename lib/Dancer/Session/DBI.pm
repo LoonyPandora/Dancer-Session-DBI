@@ -15,7 +15,7 @@ viable alternatives.
 
 JSON was chosen as the default serialization format, as it is fast, terse, and portable.
 
-B<NOTE: This module is currently only compatible with MySQL and SQLite. This will change in the future>
+Supported databases are MySQL > 4.1.1, PostgreSQL > 9.1, and SQLite > 3.0
 
 =head1 USAGE
 
@@ -50,12 +50,13 @@ If using a C<Memory> table, you must use a C<VARCHAR> type for the C<session_dat
 table type doesn't support C<TEXT>
 
 A timestamp field that updates when a session is updated is recommended, so you can expire sessions
-server-side as well as client-side.
+server-side as well as client-side. You can do this in MySQL with the following SQL. Other database
+engines are left as an exercise for the reader.
 
     `last_active` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
 This session engine will not automagically remove expired sessions on the server, but with a timestamp
-field as above, you should be able to to do this.
+field as above, you should be able to to do this manually.
 
 =cut
 
@@ -67,7 +68,7 @@ use Dancer qw(:syntax);
 use DBI;
 use Try::Tiny;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.1.0';
 
 
 =head1 METHODS
