@@ -2,11 +2,11 @@
 
     [ FEATURE ]
     * Added PostgreSQL support for version 9.1 and greater
-        (With thanks to René Hertel)
+        (With thanks to René Hertell)
     * Added a minimum version check to MySQL case.
 
     [ TESTS ]
-    * Module is now tested by TravisCI
+    * Module is now tested by Travis CI
 
     [ BUGFIX ]
     * SQLite sessions would only store one item at a time
