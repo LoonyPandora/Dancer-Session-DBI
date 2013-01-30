@@ -105,7 +105,7 @@ sub flush {
                 die "A minimum of MySQL 4.1.1 is required";
             }
 
-            my $sth = $self->_dbh->prepare_cached(qq{
+            my $sth = $self->_dbh->prepare(qq{
                 INSERT INTO $quoted_table (id, session_data)
                 VALUES (?, ?)
                 ON DUPLICATE KEY
@@ -113,18 +113,18 @@ sub flush {
             });
 
             $sth->execute($self->id, $self->_serialize, $self->_serialize);
-            $sth->finish();
+            $sth->commit();        
         }
 
         when ('sqlite') {
             # All stable versions of DBD::SQLite use an SQLite version that support upserts
-            my $sth = $self->_dbh->prepare_cached(qq{
+            my $sth = $self->_dbh->prepare(qq{
                 INSERT OR REPLACE INTO $quoted_table (id, session_data) 
                 VALUES (?, ?)
             });
 
             $sth->execute($self->id, $self->_serialize);
-            $sth->finish();        
+            $sth->commit();        
         }
 
         when ('pg') {
@@ -133,7 +133,7 @@ sub flush {
                 die "A minimum of PostgreSQL 9.1 is required";
             }
 
-            my $sth = $self->_dbh->prepare_cached(qq{
+            my $sth = $self->_dbh->prepare(qq{
                 WITH upsert AS (
                     UPDATE $quoted_table
                     SET session_data = ?
@@ -148,7 +148,7 @@ sub flush {
 
             my $session_data = $self->_serialize;
             $sth->execute($session_data, $self->id, $self->id, $session_data);
-            $sth->finish();        
+            $sth->commit();        
         }
 
      	default {
@@ -175,7 +175,7 @@ sub retrieve {
     my $session = try {
         my $quoted_table = $self->_quote_table;
 
-        my $sth = $self->_dbh->prepare_cached(qq{
+        my $sth = $self->_dbh->prepare(qq{
             SELECT session_data
             FROM $quoted_table
             WHERE id = ?
@@ -183,7 +183,6 @@ sub retrieve {
 
         $sth->execute( $session_id );
         my ($session) = $sth->fetchrow_array();
-        $sth->finish();
 
         $self->_deserialize($session);        
     } catch {
@@ -206,13 +205,12 @@ sub destroy {
 
     my $quoted_table = $self->_quote_table;
 
-    my $sth = $self->_dbh->prepare_cached(qq{
+    my $sth = $self->_dbh->prepare(qq{
         DELETE FROM $quoted_table
         WHERE id = ?
     });
 
     $sth->execute($self->id);
-    $sth->finish();
 }
 
 
