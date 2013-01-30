@@ -262,6 +262,7 @@ sub _serialize {
     }
 
     # A session is by definition ephemeral - Store it compactly
+    # This is the Dancer function, not from JSON.pm
     return to_json({%$self}, { pretty => 0 });
 }
 
@@ -275,6 +276,7 @@ sub _deserialize {
         return $settings->{deserializer}->($json);
     }
 
+    # This is the Dancer function, not from JSON.pm
     return from_json($json);
 }
 
