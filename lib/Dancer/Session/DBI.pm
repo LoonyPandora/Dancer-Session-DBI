@@ -152,7 +152,7 @@ sub flush {
         }
 
      	default {
-            die "SQLite, MySQL > 4.1.1, and PostgresSQL > 9.1 are the only supported databases";
+            die "SQLite, MySQL > 4.1.1, and PostgreSQL > 9.1 are the only supported databases";
         }
     }
 
