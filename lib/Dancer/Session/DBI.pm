@@ -113,7 +113,7 @@ sub flush {
             });
 
             $sth->execute($self->id, $self->_serialize, $self->_serialize);
-            $sth->commit();        
+            $self->_dbh->commit();        
         }
 
         when ('sqlite') {
@@ -124,7 +124,7 @@ sub flush {
             });
 
             $sth->execute($self->id, $self->_serialize);
-            $sth->commit();        
+            $self->_dbh->commit();        
         }
 
         when ('pg') {
@@ -148,7 +148,7 @@ sub flush {
 
             my $session_data = $self->_serialize;
             $sth->execute($session_data, $self->id, $self->id, $session_data);
-            $sth->commit();        
+            $self->_dbh->commit();        
         }
 
      	default {
