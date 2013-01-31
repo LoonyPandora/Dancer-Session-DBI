@@ -152,7 +152,7 @@ sub flush {
         }
 
      	default {
-            die "MySQL and SQLite are the only currently supported databases";
+            die "SQLite, MySQL > 4.1, and PostgresSQL > 9.1 are the only currently supported databases";
         }
     }
 
