@@ -172,25 +172,25 @@ session was found, but could not be deserialized.
 sub retrieve {
     my ($self, $session_id) = @_;
 
+    my $quoted_table = $self->_quote_table;
+
+    my $sth = $self->_dbh->prepare(qq{
+        SELECT session_data
+        FROM $quoted_table
+        WHERE id = ?
+    });
+
+    $sth->execute($session_id);
+    my ($session_data) = $sth->fetchrow_array();
+
     my $session = try {
-        my $quoted_table = $self->_quote_table;
-
-        my $sth = $self->_dbh->prepare(qq{
-            SELECT session_data
-            FROM $quoted_table
-            WHERE id = ?
-        });
-
-        $sth->execute( $session_id );
-        my ($session) = $sth->fetchrow_array();
-
-        $self->_deserialize($session);        
+        $self->_deserialize($session_data);        
     } catch {
-        warning("Could not retrieve session ID $session_id - $_");
+        warning "Could not retrieve session ID $session_id - $_";
         return;
     };
 
-    return bless $session, __PACKAGE__ if $session;
+    bless $session, __PACKAGE__ if $session;
 }
 
 
