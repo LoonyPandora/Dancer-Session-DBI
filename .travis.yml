@@ -17,8 +17,8 @@ before_install:
     - cpanm Dist::Zilla DBD::mysql DBD::Pg DBD::SQLite --quiet --notest
 
 install:
-    - dzil authordeps | xargs cpanm --quiet --notest || { cat ~/.cpanm/build.log ; false ; }
-    - dzil listdeps | xargs cpanm --quiet --notest || { cat ~/.cpanm/build.log ; false ; }
+    - dzil authordeps | xargs cpanm --quiet --notest
+    - dzil listdeps | xargs cpanm --quiet --notest
 
 before_script:    
     - psql -c 'CREATE DATABASE myapp_test;' -U postgres
