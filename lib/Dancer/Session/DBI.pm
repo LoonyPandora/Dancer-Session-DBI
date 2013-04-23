@@ -22,7 +22,7 @@ Supported databases are MySQL > 4.1.1, PostgreSQL > 9.1, and SQLite > 3.0
 In config.yml
 
   session: "DBI"
-  session_options: 
+  session_options:
       dsn:      "DBI:mysql:database=testing;host=127.0.0.1;port=3306" # DBI Data Source Name
       table:    "sessions"  # Name of the table to store sessions
       user:     "user"      # Username used to connect to the database
@@ -98,7 +98,8 @@ sub flush {
     # without race-conditions. So we will have to check what database driver
     # we are using, and issue the appropriate syntax. Eventually. TODO
     my $driver = lc $self->_dbh->{Driver}{Name};
- 	if ($driver eq 'mysql') { 
+
+    if ($driver eq 'mysql') {
         # MySQL 4.1.1 made this syntax actually work. Best be extra careful
         if ($self->_dbh->{mysql_serverversion} < 40101) {
             die "A minimum of MySQL 4.1.1 is required";
@@ -113,10 +114,10 @@ sub flush {
 
         $sth->execute($self->id, $self->_serialize, $self->_serialize);
 
-        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
-    }
+        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};
 
-    elsif ($driver eq 'sqlite') {
+    } elsif ($driver eq 'sqlite') {
+
         # All stable versions of DBD::SQLite use an SQLite version that support upserts
         my $sth = $self->_dbh->prepare(qq{
             INSERT OR REPLACE INTO $quoted_table (id, session_data) 
@@ -124,10 +125,10 @@ sub flush {
         });
 
         $sth->execute($self->id, $self->_serialize);
-        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
-    }
+        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};
 
-    elsif ($driver eq 'pg') {
+    } elsif ($driver eq 'pg') {
+
         # Upserts need writable CTE's, which only appeared in Postgres 9.1
         if ($self->_dbh->{pg_server_version} < 90100) {
             die "A minimum of PostgreSQL 9.1 is required";
@@ -141,18 +142,19 @@ sub flush {
                 RETURNING id
             )
 
-            INSERT INTO $quoted_table (id, session_data) 
+            INSERT INTO $quoted_table (id, session_data)
             SELECT ?, ?
-            WHERE NOT EXISTS (SELECT 1 FROM upsert) ; 
+            WHERE NOT EXISTS (SELECT 1 FROM upsert);
         });
 
         my $session_data = $self->_serialize;
         $sth->execute($session_data, $self->id, $self->id, $session_data);
-        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
-    }
+        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};
 
- 	else {
+    } else {
+
         die "SQLite, MySQL > 4.1.1, and PostgreSQL > 9.1 are the only supported databases";
+
     }
 
     return $self;
