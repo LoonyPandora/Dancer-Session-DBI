@@ -62,13 +62,12 @@ field as above, you should be able to to do this manually.
 
 use strict;
 use parent 'Dancer::Session::Abstract';
-use feature qw(switch);
 
 use Dancer qw(:syntax);
 use DBI;
 use Try::Tiny;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.2.0';
 
 
 =head1 METHODS
@@ -98,63 +97,62 @@ sub flush {
     # There is no simple cross-database way to do an "upsert"
     # without race-conditions. So we will have to check what database driver
     # we are using, and issue the appropriate syntax. Eventually. TODO
-    given(lc $self->_dbh->{Driver}{Name}) {
-     	when ('mysql') { 
-            # MySQL 4.1.1 made this syntax actually work. Best be extra careful
-            if ($self->_dbh->{mysql_serverversion} < 40101) {
-                die "A minimum of MySQL 4.1.1 is required";
-            }
-
-            my $sth = $self->_dbh->prepare(qq{
-                INSERT INTO $quoted_table (id, session_data)
-                VALUES (?, ?)
-                ON DUPLICATE KEY
-                UPDATE session_data = ?
-            });
-
-            $sth->execute($self->id, $self->_serialize, $self->_serialize);
-
-            $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
+    my $driver = lc $self->_dbh->{Driver}{Name};
+ 	if ($driver eq 'mysql') { 
+        # MySQL 4.1.1 made this syntax actually work. Best be extra careful
+        if ($self->_dbh->{mysql_serverversion} < 40101) {
+            die "A minimum of MySQL 4.1.1 is required";
         }
 
-        when ('sqlite') {
-            # All stable versions of DBD::SQLite use an SQLite version that support upserts
-            my $sth = $self->_dbh->prepare(qq{
-                INSERT OR REPLACE INTO $quoted_table (id, session_data) 
-                VALUES (?, ?)
-            });
+        my $sth = $self->_dbh->prepare(qq{
+            INSERT INTO $quoted_table (id, session_data)
+            VALUES (?, ?)
+            ON DUPLICATE KEY
+            UPDATE session_data = ?
+        });
 
-            $sth->execute($self->id, $self->_serialize);
-            $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
+        $sth->execute($self->id, $self->_serialize, $self->_serialize);
+
+        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
+    }
+
+    elsif ($driver eq 'sqlite') {
+        # All stable versions of DBD::SQLite use an SQLite version that support upserts
+        my $sth = $self->_dbh->prepare(qq{
+            INSERT OR REPLACE INTO $quoted_table (id, session_data) 
+            VALUES (?, ?)
+        });
+
+        $sth->execute($self->id, $self->_serialize);
+        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
+    }
+
+    elsif ($driver eq 'pg') {
+        # Upserts need writable CTE's, which only appeared in Postgres 9.1
+        if ($self->_dbh->{pg_server_version} < 90100) {
+            die "A minimum of PostgreSQL 9.1 is required";
         }
 
-        when ('pg') {
-            # Upserts need writable CTE's, which only appeared in Postgres 9.1
-            if ($self->_dbh->{pg_server_version} < 90100) {
-                die "A minimum of PostgreSQL 9.1 is required";
-            }
+        my $sth = $self->_dbh->prepare(qq{
+            WITH upsert AS (
+                UPDATE $quoted_table
+                SET session_data = ?
+                WHERE id = ?
+                RETURNING id
+            )
 
-            my $sth = $self->_dbh->prepare(qq{
-                WITH upsert AS (
-                    UPDATE $quoted_table
-                    SET session_data = ?
-                    WHERE id = ?
-                    RETURNING id
-                )
+            INSERT INTO $quoted_table (id, session_data) 
+            SELECT ?, ?
+            WHERE NOT EXISTS (SELECT 1 FROM upsert) ; 
+        });
 
-                INSERT INTO $quoted_table (id, session_data) 
-                SELECT ?, ?
-                WHERE NOT EXISTS (SELECT 1 FROM upsert) ; 
-            });
+        my $session_data = $self->_serialize;
+        $sth->execute($session_data, $self->id, $self->id, $session_data);
+        $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
+    }
 
-            my $session_data = $self->_serialize;
-            $sth->execute($session_data, $self->id, $self->id, $session_data);
-            $self->_dbh->commit() unless $self->_dbh->{AutoCommit};        
-        }
-
-     	default {
-            die "SQLite, MySQL > 4.1.1, and PostgreSQL > 9.1 are the only supported databases";
-        }
+ 	else {
+        die "SQLite, MySQL > 4.1.1, and PostgreSQL > 9.1 are the only supported databases";
     }
 
     return $self;
