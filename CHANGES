@@ -1,3 +1,10 @@
+1.2.0   2013-04-23
+
+    [ FEATURE ]
+    * Remove Perl 5.18 deprecated given/when syntax - restoring Perl 5.8 support
+        (Mike Whitaker)
+
+
 1.1.0   2013-01-16
 
     [ FEATURE ]
