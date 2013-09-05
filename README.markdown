@@ -18,7 +18,7 @@ Supported databases are MySQL > 4.1.1, PostgreSQL > 9.1, and SQLite > 3.0
 In config.yml
 
     session: "DBI"
-    session_options: 
+    session_options:
         dsn:      "DBI:mysql:database=testing;host=127.0.0.1;port=3306" # DBI Data Source Name
         table:    "sessions"  # Name of the table to store sessions
         user:     "user"      # Username used to connect to the database
@@ -68,12 +68,12 @@ Write the session to the database. Returns the session object.
 
 Look for a session with the given id.
 
-Returns the session object if found, `undef` if not. Logs a warning if the
-session was found, but could not be deserialized.
+Returns the session object if found, `undef` if not. Logs a debug-level warning
+if the session was found, but could not be deserialized.
 
 ## destroy()
 
-Remove the current session object from the database..
+Remove the current session object from the database.
 
 # SEE ALSO
 
