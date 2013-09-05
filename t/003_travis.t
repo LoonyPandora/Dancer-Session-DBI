@@ -39,13 +39,13 @@ for my $config (
     is(session('testing'), '123', "Can retrieve something from the session " . $config->{user});
 
     ok(session(utf8 => "☃"), "Can set UTF8 " . $config->{user});
-    is(session('utf8'), '☃', "Can get UTF8 back" . $config->{user});
+    is(session('utf8'), '☃', "Can get UTF8 back " . $config->{user});
 
-    is(Dancer::Session::DBI->retrieve('XXX'), undef, "Unknown session is not found");
+    is(Dancer::Session::DBI->retrieve('XXX'), undef, "Unknown session is not found " . $config->{user});
 
-    ok(Dancer::Session::DBI->retrieve($current_session_id), "Directly retrieved session");
-    ok(session->destroy(), "Successfully destroyed session");
-    ok(Dancer::Session::DBI->retrieve($current_session_id), "Session was correctly destroyed");
+    ok(Dancer::Session::DBI->retrieve($current_session_id), "Directly retrieved session " . $config->{user});
+    ok(session->destroy(), "Successfully destroyed session " . $config->{user});
+    is(Dancer::Session::DBI->retrieve($current_session_id), undef, "Session was correctly destroyed " . $config->{user});
 
 }
 
