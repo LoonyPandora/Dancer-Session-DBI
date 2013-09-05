@@ -33,10 +33,20 @@ for my $config (
         dbh   => sub { $dbh },
     };
 
+    my $current_session_id = session->id();
+
     ok(session(testing => "123"), "Can something in the session " . $config->{user});
-    is(session('testing'), '123', "Can retrieve something from the session " . $config->{user}); 
+    is(session('testing'), '123', "Can retrieve something from the session " . $config->{user});
+
     ok(session(utf8 => "☃"), "Can set UTF8 " . $config->{user});
-    is(session('utf8'), '☃', "Can get UTF8 back" . $config->{user});    
+    is(session('utf8'), '☃', "Can get UTF8 back" . $config->{user});
+
+    is(Dancer::Session::DBI->retrieve('XXX'), undef, "Unknown session is not found");
+
+    ok(Dancer::Session::DBI->retrieve($current_session_id), "Directly retrieved session");
+    ok(session->destroy(), "Successfully destroyed session");
+    ok(Dancer::Session::DBI->retrieve($current_session_id), "Session was correctly destroyed");
+
 }
 
-done_testing(12);
+done_testing(24);
