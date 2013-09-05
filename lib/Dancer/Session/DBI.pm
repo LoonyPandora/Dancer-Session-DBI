@@ -96,10 +96,11 @@ sub flush {
 
     # There is no simple cross-database way to do an "upsert"
     # without race-conditions. So we will have to check what database driver
-    # we are using, and issue the appropriate syntax. Eventually. TODO
+    # we are using, and issue the appropriate syntax.
     my $driver = lc $self->_dbh->{Driver}{Name};
 
     if ($driver eq 'mysql') {
+
         # MySQL 4.1.1 made this syntax actually work. Best be extra careful
         if ($self->_dbh->{mysql_serverversion} < 40101) {
             die "A minimum of MySQL 4.1.1 is required";
@@ -120,7 +121,7 @@ sub flush {
 
         # All stable versions of DBD::SQLite use an SQLite version that support upserts
         my $sth = $self->_dbh->prepare(qq{
-            INSERT OR REPLACE INTO $quoted_table (id, session_data) 
+            INSERT OR REPLACE INTO $quoted_table (id, session_data)
             VALUES (?, ?)
         });
 
@@ -165,8 +166,8 @@ sub flush {
 
 Look for a session with the given id.
 
-Returns the session object if found, C<undef> if not. Logs a warning if the
-session was found, but could not be deserialized.
+Returns the session object if found, C<undef> if not. Logs a debug-level warning
+if the session was found, but could not be deserialized.
 
 =cut
 
@@ -184,10 +185,17 @@ sub retrieve {
     $sth->execute($session_id);
     my ($session_data) = $sth->fetchrow_array();
 
+    # Bail early if we know we have no session data at all
+    if (!defined $session_data) {
+        debug "Could not retrieve session ID: $session_id";
+        return;
+    }
+
+    # No way to check that it's valid JSON other than trying to deserialize it
     my $session = try {
-        $self->_deserialize($session_data);        
+        $self->_deserialize($session_data);
     } catch {
-        warning "Could not retrieve session ID $session_id - $_";
+        debug "Could not deserialize session ID: $session_id - $_";
         return;
     };
 
@@ -197,12 +205,17 @@ sub retrieve {
 
 =head2 destroy()
 
-Remove the current session object from the database..
+Remove the current session object from the database.
 
 =cut
 
 sub destroy {
     my $self = shift;
+
+    if (!defined $self->id) {
+        debug "No session ID passed to destroy method";
+        return;
+    }
 
     my $quoted_table = $self->_quote_table;
 
