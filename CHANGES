@@ -1,3 +1,17 @@
+1.2.1   2013-09-05
+
+    [ BUGFIX ]
+    * Make deserialization errors a debug-level warning. Issue #5 
+    * Fail gracefully when trying to destroy a non-existant session. Issue #2
+
+    [ TESTS ]
+    * Test against Perl 5.18
+    * Added a bunch more tests for destruction of sessions and error handling
+
+    [ MISC ]
+    * Numerous typos fixed
+
+
 1.2.0   2013-04-23
 
     [ FEATURE ]
