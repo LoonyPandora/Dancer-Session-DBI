@@ -2,7 +2,7 @@
 
     [ BUGFIX ]
     * Make deserialization errors a debug-level warning. Issue #5 
-    * Fail gracefully when trying to destroy a non-existant session. Issue #2
+    * Fail gracefully when trying to destroy a non-existent session. Issue #2
 
     [ TESTS ]
     * Test against Perl 5.18
