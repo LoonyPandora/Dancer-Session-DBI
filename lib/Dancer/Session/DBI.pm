@@ -101,6 +101,8 @@ sub flush {
 
     if ($driver eq 'mysql') {
 
+        # DBD-mysql-4.018 OCT 26, 2010
+
         # MySQL 4.1.1 made this syntax actually work. Best be extra careful
         if ($self->_dbh->{mysql_serverversion} < 40101) {
             die "A minimum of MySQL 4.1.1 is required";
@@ -129,6 +131,9 @@ sub flush {
         $self->_dbh->commit() unless $self->_dbh->{AutoCommit};
 
     } elsif ($driver eq 'pg') {
+
+
+        # 1.41 April 6, 2005
 
         # Upserts need writable CTE's, which only appeared in Postgres 9.1
         if ($self->_dbh->{pg_server_version} < 90100) {
